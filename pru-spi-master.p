@@ -25,9 +25,6 @@
 #error SPI master must be on PRU0 (because of the pinmux settings)
 #endif
 
-#define reg_transmitted_bytes r5
-#define reg_curr_word r6
-
 .macro BITBANG_SPI_UNASSERT_CS
 #ifdef ASSERT_LEVEL_LOW
     set r30, BITBANG_SPI_CS_R30_PIN

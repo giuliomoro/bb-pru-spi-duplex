@@ -36,6 +36,9 @@
 // Address for the Constant table Programmable Pointer Register 1(CTPPR_1)
 #define CTPPR_1         0x2202C
 
+#define reg_transmitted_bytes r5
+#define reg_curr_word r6
+
 .macro COPY_BIT
 .mparam output_reg, output_bit, input_reg, input_bit
 QBBC CLEAR_OUTPUT_BIT, input_reg, input_bit
@@ -98,6 +101,5 @@ DELAY_LOOP:
     MOV r30, 0
     LBCO reg_destination, CONST_PRUDRAM, reg_destination, 4
 .endm
-
 
 #endif
