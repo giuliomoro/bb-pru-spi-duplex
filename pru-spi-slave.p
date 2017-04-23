@@ -19,9 +19,6 @@
 #define BITBANG_SPI_SCK_R31_PIN 1 /* P8_46 */
 #endif
 
-#define reg_transmitted_bytes r5
-#define reg_curr_word r6
-
 .macro BITBANG_SPI_SLAVE_RX_TX
 .mparam data
     // r28 is our pointer to the current bit in the input/output word
