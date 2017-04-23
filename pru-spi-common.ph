@@ -15,7 +15,7 @@
 #define SECOND_BUFFER 0x400
 #define CURRENT_BUFFER_PTR 0x800
 #define TRANSMISSION_LENGTH 0x804
-#define RECEIVE_MAX_LENGTH 0x808
+#define SLAVE_MAX_TRANSMISSION_LENGTH 0x808
 
 
 #define PRU0_CONTROL_REGISTER_OFFSET 0x22000
@@ -91,7 +91,7 @@ DELAY_LOOP:
 .mparam reg_destination
     // the loader will have placed the number of bytes to transmit
     // RECEIVE_LENGTH bytes into CONST_PRUDRAM
-    MOV reg_destination, RECEIVE_MAX_LENGTH
+    MOV reg_destination, SLAVE_MAX_TRANSMISSION_LENGTH
     // load this in r1
     MOV r30, 0
     MOV r30, 0

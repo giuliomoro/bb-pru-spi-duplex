@@ -43,7 +43,7 @@ int main()
     int originalMasterBuf[length];
     int originalSlaveBuf[length];
 	signal(SIGINT, catch_function);
-    //while(!gShouldStop){
+    while(!gShouldStop){
         int* masterBuf = (int*)master->getData();
         int* slaveBuf = (int*)slave->getData();
         for(int n = 0; n < length; ++n){
@@ -59,9 +59,8 @@ int main()
 
         master->startTransmission(transmissionLength);
         printf("Transmitting\n");
-        master->waitForTransmissionToComplete();
-        printf("Transmitted\n");
-            
+        slave->waitForTransmissionToComplete();
+        printf("Completed: master sent %d bytes, slave received %d bytes\n", transmissionLength, slave->getLastTransmissionLength());
         int errors = 0;
         for(int n = 0; n < length; ++n)
         {
@@ -79,13 +78,10 @@ int main()
             printf("%d errors during transmission\n", errors);
         else
         {
-            printf("SUCCESS!\n");
-            gShouldStop = 1;
+            printf("SUCCESS: data integrity verified\n");
         }
         usleep(100000);
-    //}
-    while(!gShouldStop);
-	master->startTransmission(0);
+    }
 	return 0;
 }
 

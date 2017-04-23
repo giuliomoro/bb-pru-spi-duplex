@@ -21,7 +21,6 @@
 
 #define reg_transmitted_bytes r5
 #define reg_curr_word r6
-#define reg_flags r7
 
 .macro BITBANG_SPI_SLAVE_RX_TX
 .mparam data
@@ -45,7 +44,7 @@ BITBANG_LOOP:
     // 4) do some house keeping before reading:
     //    we shift the input word left, so we discard the 
     //    bit we just wrote and we make room for the 
-    //    incoming bit in in data.t0 ...
+    //    incoming bit in data.t0 ...
     LSL data, data, 1
     // we increment the bit counter here
     ADD r28, r28, 1
@@ -111,15 +110,14 @@ WRITE_BUFFER_LOOP_DONE:
 .endm
 
 .macro SIGNAL_ARM_OVER
-    // write the number of bytes received
-    MOV r28, TRANSMISSION_LENGTH
-    MOV r27, reg_transmitted_bytes
+    // write 0 to SLAVE_MAX_TRANSMISSION_LENGTH, so ARM knows we are done
+    MOV r27, 0
+    MOV r28, SLAVE_MAX_TRANSMISSION_LENGTH
     SBCO r27, CONST_PRUDRAM, r28, 4
 .endm
 
 START:
     MOV r30, 0 // turn off all outputs
-    MOV reg_flags, 0
     MOV r0, PRU_CONTROL_REGISTER_OFFSET
     // Set up c24 and c25 offsets with CTBIR register
     // Thus C24 points to start of PRU RAM

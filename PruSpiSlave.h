@@ -57,9 +57,15 @@ public:
 
     void waitForTransmissionToComplete(int sleepTime = 1000);
 
+    unsigned int getLastTransmissionLength()
+    {
+        return context->length;
+    }
+
     bool isTransmissionDone()
     {
-        return context->length != 0;
+        // PRU will set salveMaxTransmissionLength to 0 when it's done transmitting
+        return context->slaveMaxTransmissionLength == 0;
     }
 
 	int getBuffer()
@@ -71,7 +77,7 @@ public:
     void enableReceive(unsigned int maxLength)
     {
         context->length = 0;
-        context->receiveLength = maxLength;
+        context->slaveMaxTransmissionLength = maxLength;
     }
 
 	uint8_t* getData()
@@ -95,7 +101,6 @@ private:
 	void(*_callback)(void*);
 	void* _callbackArg;
 	PruSpiContext* volatile context;
-	uint8_t* buffers[2];
 	const unsigned int _loopTaskPriority = 90;
 	const char* _loopTaskName = "PruSpiSlave";
 };

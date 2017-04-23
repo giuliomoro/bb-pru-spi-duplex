@@ -27,7 +27,6 @@
 
 #define reg_transmitted_bytes r5
 #define reg_curr_word r6
-#define reg_flags r7
 
 .macro BITBANG_SPI_UNASSERT_CS
 #ifdef ASSERT_LEVEL_LOW
@@ -65,7 +64,7 @@ BITBANG_LOOP:
     // do some house keeping before sleeping:
     //    we shift the input word left, so we discard the 
     //    bit we just wrote and we make room for the 
-    //    incoming bit in in data.t0 ...
+    //    incoming bit in data.t0 ...
     LSL data, data, 1
     // we increment the bit counter here
     ADD r28, r28, 1
@@ -156,7 +155,6 @@ WAIT_FOR_TICK_LOOP:
 
 START:
     MOV r30, 0 // turn off all outputs
-    MOV reg_flags, 0
     MOV r0, PRU_CONTROL_REGISTER_OFFSET
     // Set up c24 and c25 offsets with CTBIR register
     // Thus C24 points to start of PRU RAM
