@@ -40,29 +40,38 @@ int main()
     slave->start(&gShouldStop, slaveCallback, NULL);
 
     int length = 0x200;
-    int transmitBuf[length];
+    int originalMasterBuf[length];
+    int originalSlaveBuf[length];
 	signal(SIGINT, catch_function);
     //while(!gShouldStop){
-        int* buf = (int*)master->getData();
+        int* masterBuf = (int*)master->getData();
+        int* slaveBuf = (int*)slave->getData();
         for(int n = 0; n < length; ++n){
-            int value = n + 1;
-            transmitBuf[n] = value;
-            buf[n] = value;
+            int masterValue = n + 1;
+            originalMasterBuf[n] = masterValue;
+            masterBuf[n] = masterValue;
+            int slaveValue = n * 2 + 1;
+            originalSlaveBuf[n] = slaveValue;
+            slaveBuf[n] = slaveValue;
         }
         int transmissionLength = length * sizeof(int);
         slave->enableReceive(transmissionLength);
+
         master->startTransmission(transmissionLength);
         printf("Transmitting\n");
         master->waitForTransmissionToComplete();
         printf("Transmitted\n");
             
-        buf = (int*)slave->getData();
         int errors = 0;
         for(int n = 0; n < length; ++n)
         {
-            if(buf[n] != transmitBuf[n]){
-                if(errors < 5)
-                    printf("Transmission error: transmitted %d received %d\n", transmitBuf[n], buf[n]);
+            if(slaveBuf[n] != originalMasterBuf[n]){
+                printf("MOSI error: transmitted %d received %d\n", originalMasterBuf[n], slaveBuf[n]);
+                ++errors;
+            }
+
+            if(masterBuf[n] != originalSlaveBuf[n]){
+                printf("MISO error: transmitted %d received %d\n", originalSlaveBuf[n], masterBuf[n]);
                 ++errors;
             }
         }

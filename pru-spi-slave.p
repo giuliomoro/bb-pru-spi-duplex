@@ -35,11 +35,10 @@ BITBANG_LOOP:
     //    read the current value of r30
     MOV r27, r30
     //    ... copy the leftmost bit from the data to be written ...
-    COPY_BIT r27, BITBANG_SPI_MOSI_R31_PIN, data, (SPI_WL - 1)
+    COPY_BIT r27, BITBANG_SPI_MISO_R30_PIN, data, (SPI_WL - 1)
     //    ... now that r27 is ready with the clock and data out value,
     //        write it to r30 at once
     // 2) wait for the clock to go high
-SET r30, BITBANG_SPI_MISO_R30_PIN
     WBS r31, BITBANG_SPI_SCK_R31_PIN
     // 3) clock is high, write and hold the output bit
     MOV r30, r27
@@ -53,7 +52,6 @@ SET r30, BITBANG_SPI_MISO_R30_PIN
     // 5) we read the input:
     // ... and we fill bit 0 with the one we read from r31
     COPY_BIT data, 0, r31, BITBANG_SPI_MOSI_R31_PIN
-CLR r30, BITBANG_SPI_MISO_R30_PIN
     QBNE BITBANG_LOOP, r28, SPI_WL
 
 .endm

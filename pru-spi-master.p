@@ -13,7 +13,6 @@
 #define PRU_CONTROL_REGISTER_OFFSET PRU1_CONTROL_REGISTER_OFFSET
 #endif 
 
-#define WAIT_AFTER_CS 1 // set to 1 as a minimum
 
 // these are the pins of the PRU''s own GPIOs that we want to use 
 // for bitbang SPI.
@@ -99,7 +98,7 @@ BITBANG_LOOP:
 .mparam buffer, transmitLengthBytes
     BITBANG_SPI_ASSERT_CS
     /* Short delay, ~2us, to let slave device prepare */
-    DELAY WAIT_AFTER_CS
+    DELAY DELAY_AFTER_CS
     MOV reg_transmitted_bytes, 0 // reg_transmitted_bytes counts how many bytes we transmitted
     // empty the destination register, so that words shorter than 32bits find it empty
     MOV reg_curr_word, 0

@@ -8,6 +8,7 @@
 
 #define SPI_WL 32
 #define SPI_WL_BYTES (SPI_WL >> 3)
+#define DELAY_AFTER_CS 100 // in 10ns: sleep after CS to allow the slave to prepare. Set to 1 as a minimum
 
 // this needs to reflect the PruSpiContext struct
 #define FIRST_BUFFER 0x0 
