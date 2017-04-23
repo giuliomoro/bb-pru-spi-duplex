@@ -1,0 +1,9 @@
+.*.sw?
+*.d
+*.o
+*.a
+*.so
+DemoPruSpi
+
+pru-spi-*.txt
+*.bin
