@@ -1,8 +1,10 @@
 #include <prussdrv.h>
 #include <pruss_intc_mapping.h>
-#include "PruSpiMaster.h"
+#include "PruSpiSlave.h"
 
-int PruSpiMaster::init()
+// same as PruSpiMaster::init except PRU_SPI..._NUM and file to load:
+// TODO: refactor
+int PruSpiSlave::init()
 {
 	/* Initialize the PRU */
 	int ret;
@@ -34,7 +36,7 @@ int PruSpiMaster::init()
 
 	prussdrv_pru_clear_event(PRU_EVTOUT_0, PRU0_ARM_INTERRUPT);
 
-	prussdrv_map_prumem (PRU_SPI_MASTER_NUM == 0 ? PRUSS0_PRU0_DATARAM : PRUSS0_PRU1_DATARAM, (void **)&_pruMem);
+	prussdrv_map_prumem (PRU_SPI_SLAVE_NUM == 0 ? PRUSS0_PRU0_DATARAM : PRUSS0_PRU1_DATARAM, (void **)&_pruMem);
 	if(_pruMem == NULL){
 		fprintf(stderr, "prussdrv_map_prumem failed\n");
 		return -1;
@@ -46,7 +48,7 @@ int PruSpiMaster::init()
 
 	if(!_pruEnabled)
 	{
-		if(prussdrv_exec_program (PRU_SPI_MASTER_NUM, "/root/spi-duplex/pru-spi-master.bin"))
+		if(prussdrv_exec_program (PRU_SPI_SLAVE_NUM, "/root/spi-duplex/pru-spi-master.bin"))
 		{
 			fprintf(stderr, "Failed loading spi-pru program\n");
 			return -1;
@@ -60,7 +62,7 @@ int PruSpiMaster::init()
 	return 1;
 }
 
-int PruSpiMaster::start(volatile int* shouldStop, void(*callback)(void*), void* arg)
+int PruSpiSlave::start(volatile int* shouldStop, void(*callback)(void*), void* arg)
 {
 	if(shouldStop)
 		_externalShouldStop = shouldStop;
@@ -92,20 +94,20 @@ int PruSpiMaster::start(volatile int* shouldStop, void(*callback)(void*), void* 
 	return 1;
 }
 
-void PruSpiMaster::stop()
+void PruSpiSlave::stop()
 {
 	_externalShouldStop = &_shouldStop;
 	_shouldStop = true;
 	_callback = NULL;
 }
 
-void PruSpiMaster::cleanup()
+void PruSpiSlave::cleanup()
 {
 	_pruMem = NULL;
 	_callback = NULL;
 	if(_pruEnabled)
 	{
-		prussdrv_pru_disable(PRU_SPI_MASTER_NUM);
+		prussdrv_pru_disable(PRU_SPI_SLAVE_NUM);
 		_pruEnabled = false;
 	}
 	if(_pruInited)
@@ -115,7 +117,7 @@ void PruSpiMaster::cleanup()
 	}
 }
 
-void PruSpiMaster::waitForTransmissionToComplete(int sleepTime)
+void PruSpiSlave::waitForTransmissionToComplete(int sleepTime)
 {
     // PRU will set length to 0 when it's done transmitting
     while(!isTransmissionDone())
@@ -125,9 +127,9 @@ void PruSpiMaster::waitForTransmissionToComplete(int sleepTime)
     }
 }
 
-void PruSpiMaster::loop(void* arg)
+void PruSpiSlave::loop(void* arg)
 {
-	PruSpiMaster* that = (PruSpiMaster*)arg;
+	PruSpiSlave* that = (PruSpiSlave*)arg;
 	int lastBuffer = that->getBuffer();
 	while(!that->shouldStop()){
 		int buffer = that->getBuffer();

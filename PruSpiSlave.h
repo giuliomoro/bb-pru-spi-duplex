@@ -1,18 +1,17 @@
-#ifndef PRUSPIMASTER_H_INCLUDED
-#define PRUSPIMASTER_H_INCLUDED
+#ifndef PRUSPISLAVE_H_INCLUDED
+#define PRUSPISLAVE_H_INCLUDED
 
-#include "PruSpiContext.h"
 #include <string.h>
 #include <native/task.h>
 #include <unistd.h>
+#include "PruSpiContext.h"
 
-#define PRU_SPI_MASTER_NUM 0
+#define PRU_SPI_SLAVE_NUM 1
 
-
-class PruSpiMaster
+class PruSpiSlave
 {
 public:
-	PruSpiMaster() :
+	PruSpiSlave() :
 		_pruInited(false)
 		, _pruEnabled(false)
 		, _isPruRunning(false)
@@ -20,7 +19,7 @@ public:
 		, context(NULL)
 	{ }
 
-	~PruSpiMaster()
+	~PruSpiSlave()
 	{
 		cleanup();
 	}
@@ -28,12 +27,12 @@ public:
 
 	/**
 	 * Enables the PRU.
-	 *
 	 */
 	int init();
 
 	/**
-	 * Starts the PRU loop
+	 * Starts the PRU loop in continuous scan mode:
+	 * it will periodically request frames from the connected devices.
 	 */
 	int start(volatile int* shouldStop, void(*callback)(void*), void* arg);
 
@@ -60,7 +59,7 @@ public:
 
     bool isTransmissionDone()
     {
-        return context->length == 0;
+        return context->length != 0;
     }
 
 	int getBuffer()
@@ -69,9 +68,10 @@ public:
 		return context->buffer;
 	}
 
-    void startTransmission(unsigned int length)
+    void enableReceive(unsigned int maxLength)
     {
-        context->length = length;
+        context->length = 0;
+        context->receiveLength = maxLength;
     }
 
 	uint8_t* getData()
@@ -97,6 +97,7 @@ private:
 	PruSpiContext* volatile context;
 	uint8_t* buffers[2];
 	const unsigned int _loopTaskPriority = 90;
-	const char* _loopTaskName = "PruSpiMaster";
+	const char* _loopTaskName = "PruSpiSlave";
 };
 #endif /* PRUSPIMASTER_H_INCLUDED */
+

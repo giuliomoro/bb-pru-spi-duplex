@@ -4,13 +4,13 @@ OUTPUT=DemoPruSpi
 #CC=clang
 #CXX=clang++
 OPT_FLAGS ?= -g -march=armv7-a -mtune=cortex-a8 -mfloat-abi=hard -mfpu=neon -ftree-vectorize -DNDEBUG -Wall -U_FORTIFY_SOURCE
-PRU_OBJS ?= pru-spi-master.bin #pru-spi-slave.bin
+PRU_OBJS ?= pru-spi-master.bin pru-spi-slave.bin
 
 CFLAGS ?= -I/usr/xenomai/include -I$(BELA_PATH)/include $(OPT_FLAGS)
 CPPFLAGS ?= $(CFLAGS) -std=c++11
 LDFLAGS ?= -L/usr/xenomai/lib -L/root/Bela/lib/
 LDLIBS = -lrt -lnative -lxenomai -lprussdrv
-OBJS ?= PruSpiMaster.o
+OBJS ?= PruSpiMaster.o PruSpiSlave.o
 DEMO_OBJS ?= DemoPruSpi.o $(OBJS)
 OLD_OBJS ?= main.o loader.o $(OBJS)
 LIB_OBJS = $(OBJS:.o=.fpic.o)

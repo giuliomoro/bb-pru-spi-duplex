@@ -2,49 +2,26 @@
 .origin 0
 .entrypoint START
 
-//#define BITBANG_SPI_FASTEST // allows to obtain a 10MHz symmetrical clock
-#ifndef BITBANG_SPI_FASTEST
-#define BITBANG_SPI_CLOCK_SLEEP 4 // a value of 0 gives a bitbang clock of 7.7 MHz. Add here additional sleep time (in 10ns).
-#endif /* BITBANG_SPI_FASTEST */
-
-#ifdef PRU_SPI_MASTER_USING_PRU_0
+#ifdef SLAVE_USING_PRU_0
 #define PRU_CONTROL_REGISTER_OFFSET PRU0_CONTROL_REGISTER_OFFSET
 #else 
 #define PRU_CONTROL_REGISTER_OFFSET PRU1_CONTROL_REGISTER_OFFSET
 #endif 
 
-#define WAIT_AFTER_CS 1 // set to 1 as a minimum
-
 // these are the pins of the PRU''s own GPIOs that we want to use 
 // for bitbang SPI.
-#ifdef PRU_SPI_MASTER_USING_PRU_0
-#define BITBANG_SPI_CS_R30_PIN 5 /* P9_27 */
-#define BITBANG_SPI_MISO_R31_PIN 15 /* P8_15*/
-#define BITBANG_SPI_MOSI_R30_PIN 15 /* P8_11 */
-#define BITBANG_SPI_SCK_R30_PIN 14 /* P8_12 */
+#ifdef SLAVE_USING_PRU_0
+#error SPI slave must be on PRU1 (because of the pinmux settings)
 #else
-#error SPI master must be on PRU0 (because of the pinmux settings)
+#define BITBANG_SPI_CS_R31_PIN 3 /* P8_44 */
+#define BITBANG_SPI_MISO_R30_PIN 2 /* P8_43*/
+#define BITBANG_SPI_MOSI_R31_PIN 0 /* P8_45 */
+#define BITBANG_SPI_SCK_R31_PIN 1 /* P8_46 */
 #endif
 
 #define reg_transmitted_bytes r5
 #define reg_curr_word r6
 #define reg_flags r7
-
-.macro BITBANG_SPI_UNASSERT_CS
-#ifdef ASSERT_LEVEL_LOW
-    set r30, BITBANG_SPI_CS_R30_PIN
-#else
-    clr r30, BITBANG_SPI_CS_R30_PIN
-#endif
-.endm
-
-.macro BITBANG_SPI_ASSERT_CS
-#ifdef ASSERT_LEVEL_LOW
-    clr r30, BITBANG_SPI_CS_R30_PIN
-#else
-    set r30, BITBANG_SPI_CS_R30_PIN
-#endif
-.endm
 
 .macro BITBANG_SPI_TX_RX
 .mparam data
@@ -95,65 +72,63 @@ BITBANG_LOOP:
     CLR r30, BITBANG_SPI_SCK_R30_PIN
 .endm
 
-.macro BUS_MODE_MASTER_TX_RX
+.macro STORE_RECEIVED_BYTES
+    MOV r27, TRANSMISSION_LENGTH
+    SBCO reg_transmitted_bytes, CONST_PRUDRAM, r27, 4
+.endm
+
+// wait till the line is asserted
+.macro WAIT_FOR_CS
+#ifdef ASSERT_LEVEL_LOW
+    //wait for byte to clear
+    WBC r31, BITBANG_SPI_CS_R31_PIN
+#else
+    //wait for byte to be set
+    WBS r31, BITBANG_SPI_CS_R31_PIN
+#endif
+.endm
+
+.macro IS_CS_ASSERTED
+.mparam result
+#ifdef ASSERT_LEVEL_LOW
+    QBBC SET, r30, BITBANG_SPI_CS_R31_PIN
+#else
+    QBBS SET, r30, BITBANG_SPI_CS_R31_PIN
+#endif
+CLEAR:
+SET:
+DONE:
+.endm
+
+.macro BUS_MODE_SLAVE_RX_TX
 .mparam buffer, transmitLengthBytes
-    BITBANG_SPI_ASSERT_CS
-    /* Short delay, ~2us, to let slave device prepare */
-    DELAY WAIT_AFTER_CS
+    WAIT_FOR_CS
+    SET R30, 2
+    HALT
     MOV reg_transmitted_bytes, 0 // reg_transmitted_bytes counts how many bytes we transmitted
     // empty the destination register, so that words shorter than 32bits find it empty
     MOV reg_curr_word, 0
 WRITE_BUFFER_LOOP:
     // load one word from memory
     LBBO reg_curr_word, buffer, reg_transmitted_bytes, SPI_WL_BYTES
-    BITBANG_SPI_TX_RX reg_curr_word
+    //BITBANG_SPI_SLAVE_RX_TX reg_curr_word
     //store received word in memory
     SBBO reg_curr_word, buffer, reg_transmitted_bytes, SPI_WL_BYTES
     // increment pointer
     ADD reg_transmitted_bytes, reg_transmitted_bytes, SPI_WL_BYTES
+    // Check if CS has been unasserted in the meantime
+    IS_CS_ASSERTED r27
     QBLT WRITE_BUFFER_LOOP, transmitLengthBytes, reg_transmitted_bytes
-RECEIVE_DONE:
-    BITBANG_SPI_UNASSERT_CS
+WRITE_BUFFER_LOOP_DONE:
+    STORE_RECEIVED_BYTES
 .endm
 
 .macro SIGNAL_ARM_OVER
-    // reset word count to 0
+    // write the number of bytes received
     MOV r28, TRANSMISSION_LENGTH
-    MOV r27, 0 
+    MOV r27, reg_transmitted_bytes
     SBCO r27, CONST_PRUDRAM, r28, 4
 .endm
-
-/*
-.macro GET_CYCLE_COUNTER
-.mparam out
-    MOV r27, PRU_CONTROL_REGISTER_OFFSET
-    LBBO out, r27, 0x000C, 4
-.endm
-
-.macro CLEAR_CYCLE_COUNTER
-    MOV r27, PRU_CONTROL_REGISTER_OFFSET
-    MOV r28, 0
-    SBBO r28, r27, 0x000C, 4
-.endm
-
-.macro ENABLE_CYCLE_COUNTER
-    MOV r28, PRU_CONTROL_REGISTER_OFFSET
-    // Load content of the control register into r27
-    LBBO r27, r28, 0, 4
-    // Enable cycle counter
-    OR r27, r27, 1 << 3
-    // Store the new control register value
-    SBBO r27, r28, 0, 4
-.endm
-
-.macro WAIT_FOR_TICK
-WAIT_FOR_TICK_LOOP:
-    GET_CYCLE_COUNTER r27
-    MOV r28, CYCLES_PER_TICK
-    QBGE WAIT_FOR_TICK_LOOP, r27, r28
-    CLEAR_CYCLE_COUNTER
-.endm
-*/
 
 START:
     MOV reg_flags, 0
@@ -170,18 +145,16 @@ START:
     SBCO      r0, C4, 4, 4
 
 WAIT_FOR_ARM:
-    GET_PAYLOAD_LENGTH_MASTER r1
-    // if there is nothing to send, wait again
+    GET_PAYLOAD_LENGTH_SLAVE r1
+    // check if we are ready to receive
     QBEQ WAIT_FOR_ARM, r1, 0
 
     GET_PAYLOAD_ADDRESS r2
-
-    // transmit/receive r1 bytes from/in r2
-    BUS_MODE_MASTER_TX_RX r2, r1
+    // transmit/receive up to r1 bytes from/in r2
+    BUS_MODE_SLAVE_RX_TX r2, r1
 COMMUNICATION_DONE:
     // signal ARM that the communication is over
     SIGNAL_ARM_OVER
-
-
     // and wait again
     QBA WAIT_FOR_ARM
+
