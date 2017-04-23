@@ -23,53 +23,39 @@
 #define reg_curr_word r6
 #define reg_flags r7
 
-.macro BITBANG_SPI_TX_RX
+.macro BITBANG_SPI_SLAVE_RX_TX
 .mparam data
     // r28 is our pointer to the current bit in the input/output word
     MOV r28, 0
 
 BITBANG_LOOP:
-    // 1) set clock low and at the same time write the output bit.
-    //    Prepare the value to write to r30:
-    //    read the current value ...
+    // wait  for the clock to go down
+    WBC r31, BITBANG_SPI_SCK_R31_PIN
+    // 1) Prepare the value to write to r30:
+    //    read the current value of r30
     MOV r27, r30
-    //    ... clear the clock bit (clock low) ...
-    CLR r27, BITBANG_SPI_SCK_R30_PIN
     //    ... copy the leftmost bit from the data to be written ...
-    COPY_BIT r27, BITBANG_SPI_MOSI_R30_PIN, data, (SPI_WL - 1)
+    COPY_BIT r27, BITBANG_SPI_MOSI_R31_PIN, data, (SPI_WL - 1)
     //    ... now that r27 is ready with the clock and data out value,
     //        write it to r30 at once
+    // 2) wait for the clock to go high
+SET r30, BITBANG_SPI_MISO_R30_PIN
+    WBS r31, BITBANG_SPI_SCK_R31_PIN
+    // 3) clock is high, write and hold the output bit
     MOV r30, r27
-    // do some house keeping before sleeping:
+    // 4) do some house keeping before reading:
     //    we shift the input word left, so we discard the 
     //    bit we just wrote and we make room for the 
     //    incoming bit in in data.t0 ...
     LSL data, data, 1
     // we increment the bit counter here
     ADD r28, r28, 1
-    // 2) wait while holding the clock low
-    //   DELAY times and NOP have been tweaked using a scope
-    //   in order to obtain a symmetrical clock
-#ifdef BITBANG_SPI_FASTEST
-    DELAY 3
-#else
-    MOV r27, r27 // NOP, to make clock symmetric
-    DELAY 4 + BITBANG_SPI_CLOCK_SLEEP
-#endif /* BITBANG_SPI_FASTEST */
-    // 3) clock goes high: this triggers the slave to write its
-    //    output bit to the MISO line
-    SET r30, BITBANG_SPI_SCK_R30_PIN
-    // 4) wait while holding clock high
-#ifndef BITBANG_SPI_FASTEST
-    DELAY 1 + BITBANG_SPI_CLOCK_SLEEP
-#endif /* ifndef BITBANG_SPI_FASTEST */
     // 5) we read the input:
     // ... and we fill bit 0 with the one we read from r31
-    COPY_BIT data, 0, r31, BITBANG_SPI_MISO_R31_PIN
+    COPY_BIT data, 0, r31, BITBANG_SPI_MOSI_R31_PIN
+CLR r30, BITBANG_SPI_MISO_R30_PIN
     QBNE BITBANG_LOOP, r28, SPI_WL
 
-    // always make sure we pull the clock line down when we are done
-    CLR r30, BITBANG_SPI_SCK_R30_PIN
 .endm
 
 .macro STORE_RECEIVED_BYTES
@@ -96,28 +82,31 @@ BITBANG_LOOP:
     QBBS SET, r30, BITBANG_SPI_CS_R31_PIN
 #endif
 CLEAR:
+    MOV result, 0
+QBA DONE
 SET:
+    MOV result, 1
 DONE:
 .endm
 
 .macro BUS_MODE_SLAVE_RX_TX
 .mparam buffer, transmitLengthBytes
     WAIT_FOR_CS
-    SET R30, 2
-    HALT
     MOV reg_transmitted_bytes, 0 // reg_transmitted_bytes counts how many bytes we transmitted
     // empty the destination register, so that words shorter than 32bits find it empty
     MOV reg_curr_word, 0
 WRITE_BUFFER_LOOP:
     // load one word from memory
     LBBO reg_curr_word, buffer, reg_transmitted_bytes, SPI_WL_BYTES
-    //BITBANG_SPI_SLAVE_RX_TX reg_curr_word
+    BITBANG_SPI_SLAVE_RX_TX reg_curr_word
     //store received word in memory
     SBBO reg_curr_word, buffer, reg_transmitted_bytes, SPI_WL_BYTES
     // increment pointer
     ADD reg_transmitted_bytes, reg_transmitted_bytes, SPI_WL_BYTES
     // Check if CS has been unasserted in the meantime
     IS_CS_ASSERTED r27
+    // and break if that is the case
+    QBEQ WRITE_BUFFER_LOOP_DONE, r27, 0
     QBLT WRITE_BUFFER_LOOP, transmitLengthBytes, reg_transmitted_bytes
 WRITE_BUFFER_LOOP_DONE:
     STORE_RECEIVED_BYTES
@@ -131,6 +120,7 @@ WRITE_BUFFER_LOOP_DONE:
 .endm
 
 START:
+    MOV r30, 0 // turn off all outputs
     MOV reg_flags, 0
     MOV r0, PRU_CONTROL_REGISTER_OFFSET
     // Set up c24 and c25 offsets with CTBIR register

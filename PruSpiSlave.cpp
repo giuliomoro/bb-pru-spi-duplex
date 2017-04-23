@@ -48,7 +48,7 @@ int PruSpiSlave::init()
 
 	if(!_pruEnabled)
 	{
-		if(prussdrv_exec_program (PRU_SPI_SLAVE_NUM, "/root/spi-duplex/pru-spi-master.bin"))
+		if(prussdrv_exec_program (PRU_SPI_SLAVE_NUM, "/root/spi-duplex/pru-spi-slave.bin"))
 		{
 			fprintf(stderr, "Failed loading spi-pru program\n");
 			return -1;

@@ -156,6 +156,7 @@ WAIT_FOR_TICK_LOOP:
 */
 
 START:
+    MOV r30, 0 // turn off all outputs
     MOV reg_flags, 0
     MOV r0, PRU_CONTROL_REGISTER_OFFSET
     // Set up c24 and c25 offsets with CTBIR register

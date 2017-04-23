@@ -92,6 +92,9 @@ DELAY_LOOP:
     // RECEIVE_LENGTH bytes into CONST_PRUDRAM
     MOV reg_destination, RECEIVE_MAX_LENGTH
     // load this in r1
+    MOV r30, 0
+    MOV r30, 0
+    MOV r30, 0
     LBCO reg_destination, CONST_PRUDRAM, reg_destination, 4
 .endm
 
