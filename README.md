@@ -1,6 +1,6 @@
 PRU bitbanging master/slave SPI bus.
 
-###MASTER PRU 0
+### MASTER PRU 0
 
 CS out  P9_27 R30.5 0x1a4 0x25
 
@@ -10,7 +10,7 @@ MOSI out P8_11 R30.15 0x034 0x26
 
 SCK out P8_12 R30.14 0x030 0x26
 
-###SLAVE PRU 1
+### SLAVE PRU 1
 
 CS in P8_44 R31.3 0x0ac 0x26
 
