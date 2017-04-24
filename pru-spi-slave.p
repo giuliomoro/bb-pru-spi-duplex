@@ -92,15 +92,15 @@ DONE:
 WRITE_BUFFER_LOOP:
     // load one word from memory
     LBBO reg_curr_word, buffer, reg_transmitted_bytes, SPI_WL_BYTES
+    // Check if CS has been unasserted in the meantime
+    IS_CS_ASSERTED r27
+    // and break if that is the case
+    QBEQ WRITE_BUFFER_LOOP_DONE, r27, 0
     BITBANG_SPI_SLAVE_RX_TX reg_curr_word
     //store received word in memory
     SBBO reg_curr_word, buffer, reg_transmitted_bytes, SPI_WL_BYTES
     // increment pointer
     ADD reg_transmitted_bytes, reg_transmitted_bytes, SPI_WL_BYTES
-    // Check if CS has been unasserted in the meantime
-    IS_CS_ASSERTED r27
-    // and break if that is the case
-    QBEQ WRITE_BUFFER_LOOP_DONE, r27, 0
     QBLT WRITE_BUFFER_LOOP, transmitLengthBytes, reg_transmitted_bytes
 WRITE_BUFFER_LOOP_DONE:
     STORE_RECEIVED_BYTES

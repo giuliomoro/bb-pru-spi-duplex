@@ -35,7 +35,7 @@ public:
 	/**
 	 * Starts the PRU loop
 	 */
-	int start(volatile int* shouldStop, void(*callback)(void*), void* arg);
+	int start(volatile int* shouldStop, void(*callback)(void*) = NULL, void* arg = NULL);
 
 	/**
 	 * Stops the PRU loop.

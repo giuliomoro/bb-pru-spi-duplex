@@ -34,7 +34,7 @@ public:
 	 * Starts the PRU loop in continuous scan mode:
 	 * it will periodically request frames from the connected devices.
 	 */
-	int start(volatile int* shouldStop, void(*callback)(void*), void* arg);
+	int start(volatile int* shouldStop, void(*callback)(void*) = NULL, void* arg = NULL);
 
 	/**
 	 * Stops the PRU loop.

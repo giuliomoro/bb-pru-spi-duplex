@@ -9,43 +9,31 @@ void catch_function(int signo){
 	gShouldStop = 1;
 }
 
-void masterCallback(void* arg)
-{
-	printf("Master callback called\n");
-}
-
-void slaveCallback(void* arg)
-{
-    printf("Slave callback called\n");
-}
-
-PruSpiMaster* master;
-PruSpiSlave* slave;
+PruSpiMaster master;
+PruSpiSlave slave;
 int main()
 {
-    master = new PruSpiMaster();
-    slave = new PruSpiSlave();
-	if(master->init() < 0)
+	if(master.init() < 0)
 	{
 		fprintf(stderr, "Aborting\n");
 		return 1;
 	}
-    if(slave->init() < 0)
+    if(slave.init() < 0)
     {
 		fprintf(stderr, "Aborting\n");
 		return 1;
     }
 
-	master->start(&gShouldStop, masterCallback, NULL);
-    slave->start(&gShouldStop, slaveCallback, NULL);
+	master.start(&gShouldStop);
+    slave.start(&gShouldStop);
 
     int length = 0x200;
     int originalMasterBuf[length];
     int originalSlaveBuf[length];
 	signal(SIGINT, catch_function);
     while(!gShouldStop){
-        int* masterBuf = (int*)master->getData();
-        int* slaveBuf = (int*)slave->getData();
+        int* masterBuf = (int*)master.getData();
+        int* slaveBuf = (int*)slave.getData();
         for(int n = 0; n < length; ++n){
             int masterValue = n + 1;
             originalMasterBuf[n] = masterValue;
@@ -55,12 +43,12 @@ int main()
             slaveBuf[n] = slaveValue;
         }
         int transmissionLength = length * sizeof(int);
-        slave->enableReceive(transmissionLength);
+        slave.enableReceive(transmissionLength);
 
-        master->startTransmission(transmissionLength);
+        master.startTransmission(transmissionLength);
         printf("Transmitting\n");
-        slave->waitForTransmissionToComplete();
-        printf("Completed: master sent %d bytes, slave received %d bytes\n", transmissionLength, slave->getLastTransmissionLength());
+        slave.waitForTransmissionToComplete();
+        printf("Completed: master sent %d bytes, slave received %d bytes\n", transmissionLength, slave.getLastTransmissionLength());
         int errors = 0;
         for(int n = 0; n < length; ++n)
         {

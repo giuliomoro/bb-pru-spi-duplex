@@ -2,7 +2,7 @@
 #define PRU_SPI_COMMON_PH
 
 #define PRU_SPI_MASTER_USING_PRU_0
-#define PRU_SPI_SLAVE_USING_PRU_1
+#define SPI_WL 32 // word length (bits): 8, 16, 24, 32
 
 #define ASSERT_LEVEL_LOW // use ASSERT_LEVEL_HIGH otherwise
 

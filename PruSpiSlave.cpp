@@ -119,7 +119,7 @@ void PruSpiSlave::cleanup()
 
 void PruSpiSlave::waitForTransmissionToComplete(int sleepTime)
 {
-    while(!isTransmissionDone())
+    while(!shouldStop() && !isTransmissionDone())
     {
         usleep(sleepTime);
     }

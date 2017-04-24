@@ -118,7 +118,7 @@ void PruSpiMaster::cleanup()
 void PruSpiMaster::waitForTransmissionToComplete(int sleepTime)
 {
     // PRU will set length to 0 when it's done transmitting
-    while(!isTransmissionDone())
+    while(!shouldStop() && !isTransmissionDone())
     {
         printf("Waiting\n");
         usleep(sleepTime);
